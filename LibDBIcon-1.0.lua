@@ -54,23 +54,23 @@ local function getAnchors(frame)
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 end
 
-local function onEnter()
-	if this.isMoving then return end
-	local obj = this.dataObject
+local function onEnter(self)
+	if self.isMoving then return end
+	local obj = self.dataObject
 	if obj.OnTooltipShow then
-		GameTooltip:SetOwner(this, "ANCHOR_NONE")
-		GameTooltip:SetPoint(getAnchors(this))
+		GameTooltip:SetOwner(self, "ANCHOR_NONE")
+		GameTooltip:SetPoint(getAnchors(self))
 		obj.OnTooltipShow(GameTooltip)
 		GameTooltip:Show()
 	elseif obj.OnEnter then
-		obj.OnEnter(this)
+		obj.OnEnter(self)
 	end
 end
 
-local function onLeave()
-	local obj = this.dataObject
+local function onLeave(self)
+	local obj = self.dataObject
 	GameTooltip:Hide()
-	if obj.OnLeave then obj.OnLeave(this) end
+	if obj.OnLeave then obj.OnLeave(self) end
 end
 
 --------------------------------------------------------------------------------
@@ -113,40 +113,40 @@ do
 	end
 end
 
-function onClick() if this.dataObject.OnClick then this.dataObject.OnClick(this, arg1) end end
-function onMouseDown() this.isMouseDown = true; this.icon:UpdateCoord() end
-function onMouseUp() this.isMouseDown = false; this.icon:UpdateCoord() end
+function onClick(self, b) if self.dataObject.OnClick then self.dataObject.OnClick(self, b) end end
+function onMouseDown(self) self.isMouseDown = true; self.icon:UpdateCoord() end
+function onMouseUp(self) self.isMouseDown = false; self.icon:UpdateCoord() end
 
 do
-	local function onUpdate()
+	local function onUpdate(self)
 		local mx, my = Minimap:GetCenter()
 		local px, py = GetCursorPosition()
 		local scale = Minimap:GetEffectiveScale()
 		px, py = px / scale, py / scale
-		if this.db then
-			this.db.minimapPos = math.mod(math.deg(math.atan2(py - my, px - mx)), 360)
+		if self.db then
+			self.db.minimapPos = math.deg(math.atan2(py - my, px - mx)) % 360
 		else
-			this.minimapPos = math.mod(math.deg(math.atan2(py - my, px - mx)), 360)
+			self.minimapPos = math.deg(math.atan2(py - my, px - mx)) % 360
 		end
-		updatePosition(this)
+		updatePosition(self)
 	end
 
-	function onDragStart()
-		this:LockHighlight()
-		this.isMouseDown = true
-		this.icon:UpdateCoord()
-		this:SetScript("OnUpdate", onUpdate)
-		this.isMoving = true
+	function onDragStart(self)
+		self:LockHighlight()
+		self.isMouseDown = true
+		self.icon:UpdateCoord()
+		self:SetScript("OnUpdate", onUpdate)
+		self.isMoving = true
 		GameTooltip:Hide()
 	end
 end
 
-function onDragStop()
-	this:SetScript("OnUpdate", nil)
-	this.isMouseDown = false
-	this.icon:UpdateCoord()
-	this:UnlockHighlight()
-	this.isMoving = nil
+function onDragStop(self)
+	self:SetScript("OnUpdate", nil)
+	self.isMouseDown = false
+	self.icon:UpdateCoord()
+	self:UnlockHighlight()
+	self.isMoving = nil
 end
 
 local defaultCoords = {0, 1, 0, 1}
@@ -165,25 +165,21 @@ local function createButton(name, object, db)
 	button.dataObject = object
 	button.db = db
 	button:SetFrameStrata("MEDIUM")
-	button:SetHeight(31)
-	button:SetWidth(31)
+	button:SetSize(31, 31)
 	button:SetFrameLevel(8)
-	--button:RegisterForClicks("anyUp")
+	button:RegisterForClicks("anyUp")
 	button:RegisterForDrag("LeftButton")
-	button:SetHighlightTexture("Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight")
+	button:SetHighlightTexture(136477) --"Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
 	local overlay = button:CreateTexture(nil, "OVERLAY")
-	overlay:SetHeight(53)
-	overlay:SetWidth(53)
-	overlay:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-	overlay:SetPoint("TOPLEFT",0,0)
+	overlay:SetSize(53, 53)
+	overlay:SetTexture(136430) --"Interface\\Minimap\\MiniMap-TrackingBorder"
+	overlay:SetPoint("TOPLEFT")
 	local background = button:CreateTexture(nil, "BACKGROUND")
-	background:SetHeight(20)
-	background:SetWidth(20)
-	background:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
+	background:SetSize(20, 20)
+	background:SetTexture(136467) --"Interface\\Minimap\\UI-Minimap-Background"
 	background:SetPoint("TOPLEFT", 7, -5)
 	local icon = button:CreateTexture(nil, "ARTWORK")
-	icon:SetHeight(17)
-	icon:SetWidth(17)
+	icon:SetSize(17, 17)
 	icon:SetTexture(object.icon)
 	icon:SetPoint("TOPLEFT", 7, -6)
 	button.icon = icon
@@ -212,7 +208,7 @@ local function createButton(name, object, db)
 		if not db or not db.hide then button:Show()
 		else button:Hide() end
 	end
-	lib.callbacks:Fire("LibDBIcon_IconCreated", 2, button, name) -- Fire 'Icon Created' callback
+	lib.callbacks:Fire("LibDBIcon_IconCreated", button, name) -- Fire 'Icon Created' callback
 end
 
 -- We could use a metatable.__index on lib.objects, but then we'd create
